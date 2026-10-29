@@ -2,7 +2,8 @@
   "api_key": {
     "description": "MiMo API Key",
     "type": "string",
-    "default": ""
+    "default": "",
+    "hint": "在 MiMo 开放平台申请，留空则唱歌功能不可用"
   },
   "model": {
     "description": "模型",
@@ -12,12 +13,14 @@
   "voice": {
     "description": "音色",
     "type": "string",
-    "default": "冰糖"
+    "default": "冰糖",
+    "hint": "预置音色名，例如 冰糖 / 茉莉 / 苏打（克隆音色不支持唱歌）"
   },
   "style": {
     "description": "风格标签",
     "type": "string",
-    "default": "唱歌"
+    "default": "唱歌",
+    "hint": "写进歌词前的风格标签，默认 (唱歌)"
   },
   "user_prompt": {
     "description": "演唱提示词",

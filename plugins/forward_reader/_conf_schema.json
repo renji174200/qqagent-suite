@@ -7,16 +7,32 @@
   "max_depth": {
     "description": "嵌套转发最大深度",
     "type": "int",
-    "default": 3
+    "default": 3,
+    "slider": {
+      "min": 1,
+      "max": 5,
+      "step": 1
+    },
+    "hint": "嵌套转发最多展开几层"
   },
   "max_nodes": {
     "description": "最多展开多少条",
     "type": "int",
-    "default": 60
+    "default": 60,
+    "slider": {
+      "min": 10,
+      "max": 200,
+      "step": 10
+    }
   },
   "max_chars": {
     "description": "注入文本上限（字）",
     "type": "int",
-    "default": 4000
+    "default": 4000,
+    "slider": {
+      "min": 500,
+      "max": 20000,
+      "step": 500
+    }
   }
 }

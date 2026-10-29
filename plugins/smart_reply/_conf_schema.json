@@ -8,25 +8,37 @@
     "description": "判断用模型",
     "type": "string",
     "default": "deepseek_judge",
-    "hint": "建议用便宜/免费的模型"
+    "hint": "从下拉框选择判断模型；留空则使用当前对话模型",
+    "_special": "select_provider"
   },
   "judge_fallback_provider_id": {
     "description": "备用判断模型",
     "type": "string",
     "default": "",
-    "hint": "主模型限流时使用，留空则不用"
+    "hint": "主判断模型限流或失败时使用；留空则不启用备用",
+    "_special": "select_provider"
   },
   "judge_threshold": {
     "description": "接话分数线（0-100）",
     "type": "int",
     "default": 60,
-    "hint": "模型打分 ≥ 这个值才接话；调高更安静，调低更活跃"
+    "hint": "模型打分 ≥ 此值才接话；调高更安静，调低更活跃",
+    "slider": {
+      "min": 0,
+      "max": 100,
+      "step": 5
+    }
   },
   "recent_reply_bonus": {
     "description": "刚说过话时的分数线加成",
     "type": "int",
     "default": 15,
-    "hint": "她刚回过话的 recent_reply_window_sec 秒内，分数线提高这么多，减少连续插话"
+    "hint": "她刚回过话的 recent_reply_window_sec 秒内，分数线提高这么多，减少连续插话",
+    "slider": {
+      "min": 0,
+      "max": 50,
+      "step": 5
+    }
   },
   "recent_reply_window_sec": {
     "description": "“刚说过话”的时间窗口（秒）",
@@ -42,24 +54,44 @@
   "context_size": {
     "description": "判断时参考的历史消息条数",
     "type": "int",
-    "default": 30
+    "default": 30,
+    "slider": {
+      "min": 0,
+      "max": 200,
+      "step": 5
+    }
   },
   "min_text_len": {
     "description": "最短处理长度",
     "type": "int",
-    "default": 3
+    "default": 3,
+    "slider": {
+      "min": 1,
+      "max": 20,
+      "step": 1
+    }
   },
   "cooldown_sec": {
     "description": "接话冷却（秒）",
     "type": "int",
     "default": 0,
-    "hint": "0 = 不冷却"
+    "hint": "0 = 不冷却",
+    "slider": {
+      "min": 0,
+      "max": 600,
+      "step": 5
+    }
   },
   "max_judge_per_minute": {
     "description": "每分钟最多判断次数",
     "type": "int",
     "default": 0,
-    "hint": "0 = 不限制"
+    "hint": "0 = 不限制",
+    "slider": {
+      "min": 0,
+      "max": 120,
+      "step": 5
+    }
   },
   "quiet_hours": {
     "description": "免打扰时段",
@@ -70,7 +102,8 @@
   "name_keywords": {
     "description": "名字硬触发词",
     "type": "list",
-    "default": []
+    "default": [],
+    "hint": "必填：机器人的名字或群名片，命中后直接接话"
   },
   "force_keywords": {
     "description": "催促硬触发词",

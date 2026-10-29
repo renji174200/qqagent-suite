@@ -7,7 +7,9 @@
   "provider_id": {
     "description": "视觉模型 provider ID",
     "type": "string",
-    "default": "deepseek"
+    "default": "deepseek",
+    "_special": "select_provider",
+    "hint": "选择支持图片输入的视觉模型；留空用当前对话模型"
   },
   "sessdata": {
     "description": "B站 SESSDATA",
@@ -19,22 +21,43 @@
     "description": "抽帧数量",
     "type": "int",
     "default": 12,
-    "hint": "越多看得越细，token 也越多"
+    "hint": "抽帧数量，越多看得越细，token 消耗也越多",
+    "slider": {
+      "min": 4,
+      "max": 24,
+      "step": 2
+    }
   },
   "frame_width": {
     "description": "单帧宽度（px）",
     "type": "int",
-    "default": 960
+    "default": 960,
+    "slider": {
+      "min": 480,
+      "max": 1600,
+      "step": 80
+    },
+    "hint": "单帧宽度（像素），960 能看清字幕，1280 更清晰但更费 token"
   },
   "max_duration_sec": {
     "description": "视频最长时长（秒）",
     "type": "int",
-    "default": 900
+    "default": 900,
+    "slider": {
+      "min": 60,
+      "max": 3600,
+      "step": 60
+    }
   },
   "max_download_mb": {
     "description": "最大下载体积（MB）",
     "type": "int",
-    "default": 45
+    "default": 45,
+    "slider": {
+      "min": 10,
+      "max": 200,
+      "step": 5
+    }
   },
   "require_at_in_group": {
     "description": "群里必须 @ 才看",
@@ -44,11 +67,21 @@
   "cooldown_sec": {
     "description": "同视频冷却（秒）",
     "type": "int",
-    "default": 60
+    "default": 60,
+    "slider": {
+      "min": 0,
+      "max": 600,
+      "step": 10
+    }
   },
   "note_ttl_minutes": {
     "description": "视频笔记有效期（分钟）",
     "type": "int",
-    "default": 120
+    "default": 120,
+    "slider": {
+      "min": 10,
+      "max": 1440,
+      "step": 10
+    }
   }
 }

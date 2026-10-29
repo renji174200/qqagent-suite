@@ -18,7 +18,7 @@
 | `recent_reply_bonus` | 15 | 刚说完话时的加分门槛 |
 | `context_size` | 30 | 判断看多少条历史 |
 | `name_keywords` | 空 | **必填**：机器人名字/外号 |
-| `judge_provider_id` | 空 | 留空用当前对话模型 |
+| `judge_provider_id` | 空 | **下拉选择**判断模型；留空用当前对话模型 |
 | `decision_log` | true | 写判断日志 |
 
 ## 用法

@@ -22,17 +22,32 @@
   "idle_minutes": {
     "description": "判定空闲的分钟数",
     "type": "int",
-    "default": 20
+    "default": 20,
+    "slider": {
+      "min": 5,
+      "max": 120,
+      "step": 5
+    }
   },
   "interval_min_minutes": {
     "description": "自动戳最短间隔（分钟）",
     "type": "int",
-    "default": 30
+    "default": 30,
+    "slider": {
+      "min": 5,
+      "max": 240,
+      "step": 5
+    }
   },
   "interval_max_minutes": {
     "description": "自动戳最长间隔（分钟）",
     "type": "int",
-    "default": 80
+    "default": 80,
+    "slider": {
+      "min": 10,
+      "max": 480,
+      "step": 10
+    }
   },
   "quiet_hours": {
     "description": "免打扰时段",
@@ -43,16 +58,28 @@
   "max_per_day": {
     "description": "每人每天最多戳几次",
     "type": "int",
-    "default": 8
+    "default": 8,
+    "slider": {
+      "min": 1,
+      "max": 50,
+      "step": 1
+    }
   },
   "cooldown_sec": {
     "description": "戳一戳冷却（秒）",
     "type": "int",
-    "default": 90
+    "default": 90,
+    "slider": {
+      "min": 10,
+      "max": 600,
+      "step": 10
+    }
   },
   "provider_id": {
     "description": "使用的模型 provider ID",
     "type": "string",
-    "default": "deepseek"
+    "default": "deepseek",
+    "_special": "select_provider",
+    "hint": "选择用于判定是否戳人的模型；留空用当前对话模型"
   }
 }

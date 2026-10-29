@@ -24,7 +24,7 @@
 | `max_duration_sec` | 900 | 视频时长上限 |
 | `max_download_mb` | 45 | 下载体积上限 |
 | `sessdata` | 空 | 可选，部分视频需要 |
-| `provider_id` | 空 | 留空用当前模型（需支持图片） |
+| `provider_id` | 空 | **下拉选择**视觉模型（需支持图片）；留空用当前模型 |
 
 ## 成本
 
