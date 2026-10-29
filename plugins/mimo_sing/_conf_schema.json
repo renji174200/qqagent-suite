@@ -1,0 +1,27 @@
+{
+  "api_key": {
+    "description": "MiMo API Key",
+    "type": "string",
+    "default": ""
+  },
+  "model": {
+    "description": "模型",
+    "type": "string",
+    "default": "mimo-v2.5-tts"
+  },
+  "voice": {
+    "description": "音色",
+    "type": "string",
+    "default": "冰糖"
+  },
+  "style": {
+    "description": "风格标签",
+    "type": "string",
+    "default": "唱歌"
+  },
+  "user_prompt": {
+    "description": "演唱提示词",
+    "type": "text",
+    "default": "Hello, MiMo, have you had lunch?"
+  }
+}

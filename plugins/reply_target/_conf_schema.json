@@ -1,0 +1,32 @@
+{
+  "enable": {
+    "description": "启用引用/@ 指向",
+    "type": "bool",
+    "default": true
+  },
+  "auto_quote_group": {
+    "description": "群里自动引用原消息",
+    "type": "bool",
+    "default": true
+  },
+  "auto_quote_private": {
+    "description": "私聊自动引用原消息",
+    "type": "bool",
+    "default": false
+  },
+  "auto_quote_probability": {
+    "description": "自动引用概率（0-1）",
+    "type": "float",
+    "default": 0.4
+  },
+  "at_in_private": {
+    "description": "私聊是否用 @ 指向",
+    "type": "bool",
+    "default": false
+  },
+  "cooldown": {
+    "description": "引用冷却（秒）",
+    "type": "float",
+    "default": 0
+  }
+}

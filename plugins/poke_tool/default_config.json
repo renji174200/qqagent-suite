@@ -1,0 +1,13 @@
+{
+    "enable": true,
+    "tool_enable": true,
+    "auto_enable": false,
+    "auto_sessions": [],
+    "idle_minutes": 20,
+    "interval_min_minutes": 30,
+    "interval_max_minutes": 80,
+    "quiet_hours": "",
+    "max_per_day": 8,
+    "cooldown_sec": 90,
+    "provider_id": ""
+}

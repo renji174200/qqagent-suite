@@ -1,0 +1,22 @@
+{
+  "enable": {
+    "description": "启用转发/卡片解析",
+    "type": "bool",
+    "default": true
+  },
+  "max_depth": {
+    "description": "嵌套转发最大深度",
+    "type": "int",
+    "default": 3
+  },
+  "max_nodes": {
+    "description": "最多展开多少条",
+    "type": "int",
+    "default": 60
+  },
+  "max_chars": {
+    "description": "注入文本上限（字）",
+    "type": "int",
+    "default": 4000
+  }
+}

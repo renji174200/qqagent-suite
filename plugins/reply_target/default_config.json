@@ -1,0 +1,8 @@
+{
+    "enable": true,
+    "auto_quote_group": true,
+    "auto_quote_private": false,
+    "auto_quote_probability": 0.4,
+    "at_in_private": false,
+    "cooldown": 0
+}

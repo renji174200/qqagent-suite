@@ -1,0 +1,6 @@
+{
+    "enable": true,
+    "max_depth": 3,
+    "max_nodes": 60,
+    "max_chars": 4000
+}

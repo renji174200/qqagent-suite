@@ -1,0 +1,7 @@
+{
+    "api_key": "",
+    "model": "mimo-v2.5-tts",
+    "voice": "冰糖",
+    "style": "唱歌",
+    "user_prompt": "Hello, MiMo, have you had lunch?"
+}

@@ -1,0 +1,32 @@
+{
+    "enable": true,
+    "judge_provider_id": "",
+    "judge_fallback_provider_id": "",
+    "judge_threshold": 60,
+    "recent_reply_bonus": 15,
+    "recent_reply_window_sec": 300,
+    "dedupe_window_sec": 30,
+    "context_size": 30,
+    "min_text_len": 3,
+    "cooldown_sec": 0,
+    "max_judge_per_minute": 0,
+    "quiet_hours": "",
+    "name_keywords": [],
+    "force_keywords": [],
+    "signal_keywords": [
+        "你",
+        "鱼",
+        "肥",
+        "臭",
+        "?",
+        "？",
+        "吗",
+        "呢"
+    ],
+    "require_signal": false,
+    "ignore_senders": [],
+    "skip_commands": false,
+    "enable_continuation": false,
+    "decision_log": true,
+    "judge_prompt": ""
+}

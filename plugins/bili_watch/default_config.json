@@ -1,0 +1,12 @@
+{
+    "enable": true,
+    "provider_id": "",
+    "sessdata": "",
+    "frames": 12,
+    "frame_width": 960,
+    "max_duration_sec": 900,
+    "max_download_mb": 45,
+    "require_at_in_group": true,
+    "cooldown_sec": 60,
+    "note_ttl_minutes": 120
+}

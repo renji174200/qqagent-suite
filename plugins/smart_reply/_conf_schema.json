@@ -1,0 +1,126 @@
+{
+  "enable": {
+    "description": "启用判断接话",
+    "type": "bool",
+    "default": true
+  },
+  "judge_provider_id": {
+    "description": "判断用模型",
+    "type": "string",
+    "default": "deepseek_judge",
+    "hint": "建议用便宜/免费的模型"
+  },
+  "judge_fallback_provider_id": {
+    "description": "备用判断模型",
+    "type": "string",
+    "default": "",
+    "hint": "主模型限流时使用，留空则不用"
+  },
+  "judge_threshold": {
+    "description": "接话分数线（0-100）",
+    "type": "int",
+    "default": 60,
+    "hint": "模型打分 ≥ 这个值才接话；调高更安静，调低更活跃"
+  },
+  "recent_reply_bonus": {
+    "description": "刚说过话时的分数线加成",
+    "type": "int",
+    "default": 15,
+    "hint": "她刚回过话的 recent_reply_window_sec 秒内，分数线提高这么多，减少连续插话"
+  },
+  "recent_reply_window_sec": {
+    "description": "“刚说过话”的时间窗口（秒）",
+    "type": "int",
+    "default": 300
+  },
+  "dedupe_window_sec": {
+    "description": "相同消息去重窗口（秒）",
+    "type": "int",
+    "default": 30,
+    "hint": "同一条内容在窗口内重复出现只处理一次"
+  },
+  "context_size": {
+    "description": "判断时参考的历史消息条数",
+    "type": "int",
+    "default": 30
+  },
+  "min_text_len": {
+    "description": "最短处理长度",
+    "type": "int",
+    "default": 3
+  },
+  "cooldown_sec": {
+    "description": "接话冷却（秒）",
+    "type": "int",
+    "default": 0,
+    "hint": "0 = 不冷却"
+  },
+  "max_judge_per_minute": {
+    "description": "每分钟最多判断次数",
+    "type": "int",
+    "default": 0,
+    "hint": "0 = 不限制"
+  },
+  "quiet_hours": {
+    "description": "免打扰时段",
+    "type": "string",
+    "default": "",
+    "hint": "格式 1-8，表示 01:00~07:59；留空=全天"
+  },
+  "name_keywords": {
+    "description": "名字硬触发词",
+    "type": "list",
+    "default": []
+  },
+  "force_keywords": {
+    "description": "催促硬触发词",
+    "type": "list",
+    "default": []
+  },
+  "signal_keywords": {
+    "description": "指向性词（粗筛用）",
+    "type": "list",
+    "default": [
+      "你",
+      "鱼",
+      "肥",
+      "臭",
+      "?",
+      "？",
+      "吗",
+      "呢"
+    ]
+  },
+  "require_signal": {
+    "description": "是否启用指向性词粗筛",
+    "type": "bool",
+    "default": false
+  },
+  "ignore_senders": {
+    "description": "忽略的发送者昵称",
+    "type": "list",
+    "default": []
+  },
+  "skip_commands": {
+    "description": "跳过 / 开头的指令消息",
+    "type": "bool",
+    "default": false
+  },
+  "enable_continuation": {
+    "description": "启用“接她上一句”规则",
+    "type": "bool",
+    "default": false
+  },
+  "decision_log": {
+    "description": "记录判断日志",
+    "type": "bool",
+    "default": true,
+    "hint": "写入 plugin_data/smart_reply/decisions.jsonl，便于调准确率"
+  },
+  "judge_prompt": {
+    "description": "判断提示词模板",
+    "type": "text",
+    "default": "",
+    "hint": "留空使用内置模板；{aliases} 会被替换成别名列表"
+  }
+}

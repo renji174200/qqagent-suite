@@ -1,0 +1,58 @@
+{
+  "enable": {
+    "description": "启用插件",
+    "type": "bool",
+    "default": true
+  },
+  "tool_enable": {
+    "description": "允许模型主动戳人",
+    "type": "bool",
+    "default": true
+  },
+  "auto_enable": {
+    "description": "自动戳人（非模型触发）",
+    "type": "bool",
+    "default": false
+  },
+  "auto_sessions": {
+    "description": "自动戳人生效会话",
+    "type": "list",
+    "default": []
+  },
+  "idle_minutes": {
+    "description": "判定空闲的分钟数",
+    "type": "int",
+    "default": 20
+  },
+  "interval_min_minutes": {
+    "description": "自动戳最短间隔（分钟）",
+    "type": "int",
+    "default": 30
+  },
+  "interval_max_minutes": {
+    "description": "自动戳最长间隔（分钟）",
+    "type": "int",
+    "default": 80
+  },
+  "quiet_hours": {
+    "description": "免打扰时段",
+    "type": "string",
+    "default": "",
+    "hint": "如 1-8"
+  },
+  "max_per_day": {
+    "description": "每人每天最多戳几次",
+    "type": "int",
+    "default": 8
+  },
+  "cooldown_sec": {
+    "description": "戳一戳冷却（秒）",
+    "type": "int",
+    "default": 90
+  },
+  "provider_id": {
+    "description": "使用的模型 provider ID",
+    "type": "string",
+    "default": "deepseek"
+  }
+}

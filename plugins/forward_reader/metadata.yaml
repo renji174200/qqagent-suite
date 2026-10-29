@@ -1,0 +1,6 @@
+name: forward_reader
+display_name: 全智能QQagent · 看转发增强
+desc: 展开QQ转发消息（含嵌套）
+author: qqagent-suite
+version: 1.0.0
+astrbot_version: ">=4.25"

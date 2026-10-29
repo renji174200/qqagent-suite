@@ -1,0 +1,6 @@
+name: smart_reply
+display_name: 全智能QQagent · 接话
+desc: 打分制接话判断，带阈值/加成/去重/决策日志
+author: qqagent-suite
+version: 1.0.0
+astrbot_version: ">=4.25"
