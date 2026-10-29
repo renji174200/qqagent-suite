@@ -8,7 +8,7 @@
     "description": "判断用模型",
     "type": "string",
     "default": "deepseek_judge",
-    "hint": "从下拉框选择判断模型；留空则使用当前对话模型",
+    "hint": "从下拉框选择判断模型；留空则使用当前对话模型。此功能较为耗费 token，请谨慎使用或使用免费模型",
     "_special": "select_provider"
   },
   "judge_fallback_provider_id": {
