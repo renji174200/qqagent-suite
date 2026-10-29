@@ -2,5 +2,5 @@ name: poke_tool
 display_name: 全智能QQagent · 戳
 desc: 让机器人能戳一戳别人，时机由模型自己决定
 author: qqagent-suite
-version: 1.0.0
+version: 2.0.0
 astrbot_version: ">=4.25"

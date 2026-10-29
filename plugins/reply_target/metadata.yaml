@@ -1,7 +1,7 @@
 name: reply_target
 display_name: 全智能QQagent · 引用
 desc: 让回复明确指向某人：群里默认引用来话，模型也可主动 @ 人
-version: 1.0.0
+version: 2.0.0
 author: qqagent-suite
 repo: ""
 astrbot_version: ">=4.25"

@@ -1,5 +1,5 @@
 name: mimo_sing
 desc: 用 MiMo TTS 的唱歌风格演唱歌词
 author: qqagent-suite
-version: 1.0.0
+version: 2.0.0
 astrbot_version: ">=4.25"
