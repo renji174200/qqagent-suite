@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-让大肥鱼自己决定要不要接话（替代按概率主动回复）
+打分制接话判断：让机器人自己决定要不要开口
 
 规则优先级：
 1. 被 @ / 唤醒          -> 照常回复（本插件不介入）
@@ -9,7 +9,6 @@
 4. 其他群消息           -> 交给便宜的判断模型决定 回 / 不回
 
 配置：data/config/smart_reply_config.json
-回滚：见 /opt/astrbot-stack/backups/smart_reply_rollback/
 """
 
 import asyncio
@@ -33,7 +32,7 @@ DEFAULTS = {
     "cooldown_sec": 120,
     "context_size": 10,
     "min_text_len": 3,
-    "name_keywords": ["大肥鱼"],
+    "name_keywords": [],
     "force_keywords": [
         "说话来", "说句话", "回我", "回句话", "别装死", "装什么死",
         "你说话", "理我", "出来", "狂什么", "你倒是说", "吭声",
@@ -48,11 +47,13 @@ DEFAULTS = {
     "decision_log": True,
     "require_signal": True,
     "signal_keywords": ["你", "鱼", "肥", "臭", "?", "？", "吗", "呢"],
-    "ignore_senders": ["才不是大肥鱼"],
+    "ignore_senders": [],
     "ignore_sender_ids": [],
     "ignore_bot_names": ["机器人", "bot", "GPT", "Claude"],
     "group_overrides": {},
 }
+
+SELF_LABEL = "机器人（你）"
 
 PUNCT_ONLY = re.compile(r"^[\s\W_]+$", re.UNICODE)
 
@@ -199,7 +200,7 @@ class SmartReply(Star):
             for i, m in enumerate(self._ctx.get(umo, [])[-ctx_n:], 1):
                 lines.append(f"{i}. {m['name']}：{m['text']}")
             convo = "\n".join(lines)
-            aliases = "、".join(self.cfg.get("name_keywords") or ["大肥鱼"])
+            aliases = "、".join(self.cfg.get("name_keywords") or ["机器人"])
             template = str(self.cfg.get("judge_prompt") or "").strip() or DEFAULT_JUDGE_PROMPT
             system_prompt = template.replace("{aliases}", aliases)
             user_prompt = (
@@ -283,7 +284,7 @@ class SmartReply(Star):
             ).strip()
             if not text:
                 return
-            self._track(event.unified_msg_origin, "大肥鱼（你）", text[:200])
+            self._track(event.unified_msg_origin, SELF_LABEL, text[:200])
         except Exception:
             pass
 
@@ -386,7 +387,8 @@ class SmartReply(Star):
                 return
 
             # 硬规则：引用了她的消息（引用消息里出现她的名字/群名片）
-            if "引用消息" in text and re.search(r"引用消息\([^)]{0,40}(大肥鱼|肥鱼|臭鱼|小肥鱼)", text):
+            _qm = re.search(r"引用消息[（(](.{0,60}?)[)）]", text)
+            if _qm and any(k in _qm.group(1) for k in keywords):
                 logger.info(f"[smart_reply] 引用她的话，直接接话：{text[:40]}")
                 self._force_reply(event)
                 self._last_reply[umo] = time.time()
@@ -403,7 +405,7 @@ class SmartReply(Star):
             # 她刚说过话，且这条是紧接着她说的第一句 —— 才算承接（默认关闭）
             try:
                 hist = self._ctx.get(umo, [])[:-1] if self.cfg.get("enable_continuation", False) else []
-                if hist and str(hist[-1].get("name", "")).startswith("大肥鱼"):
+                if hist and str(hist[-1].get("name", "")).startswith("机器人"):
                     if time.time() - float(hist[-1].get("ts", 0)) < 90 and len(text) <= 12:
                         logger.info(f"[smart_reply] 承接她上一句，直接接话：{text[:30]}")
                         self._force_reply(event)

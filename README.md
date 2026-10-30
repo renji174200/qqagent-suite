@@ -1,7 +1,7 @@
 # qqagent-suite
 
 > 给 AstrBot 加一套「会看、会判断、会接梗」的 QQ 群聊增强插件。
-> 当前版本 **v2.0.0**。A suite of QQ group-chat plugins for [AstrBot](https://github.com/AstrBotDevs/AstrBot): scored reply judgment, Bilibili video understanding, forward/card parsing, poke, quote targeting and singing.
+> 当前版本 **v2.1.0**。A suite of QQ group-chat plugins for [AstrBot](https://github.com/AstrBotDevs/AstrBot): scored reply judgment, Bilibili video understanding, forward/card parsing, poke, quote targeting and singing.
 
 ## 优势 / Highlights
 
