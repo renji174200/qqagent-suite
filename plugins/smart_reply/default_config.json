@@ -28,5 +28,12 @@
     "skip_commands": false,
     "enable_continuation": false,
     "decision_log": true,
-    "judge_prompt": ""
+    "judge_prompt": "",
+    "ignore_sender_ids": [],
+    "ignore_bot_names": [
+        "机器人",
+        "bot",
+        "GPT",
+        "Claude"
+    ]
 }

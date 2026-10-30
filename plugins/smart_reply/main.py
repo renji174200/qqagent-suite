@@ -48,6 +48,8 @@ DEFAULTS = {
     "require_signal": True,
     "signal_keywords": ["你", "鱼", "肥", "臭", "?", "？", "吗", "呢"],
     "ignore_senders": [],
+    "ignore_sender_ids": [],
+    "ignore_bot_names": ["机器人", "bot", "GPT", "Claude"],
 }
 
 SELF_LABEL = "机器人（你）"
@@ -262,6 +264,27 @@ class SmartReply(Star):
         except Exception:
             pass
 
+    def _is_bot_sender(self, event, name: str) -> bool:
+        """识别其它机器人 / 指定忽略的账号，避免 bot 之间互相对话。"""
+        try:
+            sid = str(event.get_sender_id() or "")
+            ids = [str(x).strip() for x in (self.cfg.get("ignore_sender_ids") or []) if str(x).strip()]
+            if sid and sid in ids:
+                return True
+            low = (name or "").lower()
+            for kw in (self.cfg.get("ignore_bot_names") or []):
+                k = str(kw).strip()
+                if k and (k in (name or "") or k.lower() in low):
+                    return True
+            raw = getattr(getattr(event, "message_obj", None), "raw_message", None)
+            if isinstance(raw, dict):
+                sender = raw.get("sender") or {}
+                if sender.get("is_robot") is True:
+                    return True
+        except Exception:
+            pass
+        return False
+
     @filter.event_message_type(filter.EventMessageType.ALL, priority=10)
     async def on_message(self, event: AstrMessageEvent):
         try:
@@ -280,6 +303,9 @@ class SmartReply(Star):
             # 别的机器人 / 指定忽略的人，不参与判断
             ign = [str(x) for x in (self.cfg.get("ignore_senders") or []) if str(x).strip()]
             if any(x in name for x in ign):
+                return
+            if self._is_bot_sender(event, name):
+                logger.info(f"[smart_reply] 跳过其它机器人/忽略账号：{name}")
                 return
 
             # @ / 唤醒的消息交给正常流程，本插件不介入

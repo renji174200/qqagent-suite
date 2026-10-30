@@ -155,5 +155,22 @@
     "type": "text",
     "default": "",
     "hint": "留空使用内置模板；{aliases} 会被替换成别名列表"
+  },
+  "ignore_sender_ids": {
+    "description": "忽略的 QQ 号（黑名单）",
+    "type": "list",
+    "default": [],
+    "hint": "这些账号发来的消息永远不接话，用来屏蔽其它机器人"
+  },
+  "ignore_bot_names": {
+    "description": "忽略的机器人昵称关键词",
+    "type": "list",
+    "default": [
+      "机器人",
+      "bot",
+      "GPT",
+      "Claude"
+    ],
+    "hint": "昵称含这些词按机器人处理，不接话；可加入其它 AI 的名字"
   }
 }
