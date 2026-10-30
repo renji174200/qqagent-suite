@@ -160,7 +160,7 @@
     "description": "忽略的 QQ 号（黑名单）",
     "type": "list",
     "default": [],
-    "hint": "这些账号发来的消息永远不接话，用来屏蔽其它机器人"
+    "hint": "这些账号发来的消息永远不接话，用来屏蔽其它机器人，例如 2722474262"
   },
   "ignore_bot_names": {
     "description": "忽略的机器人昵称关键词",
@@ -171,6 +171,14 @@
       "GPT",
       "Claude"
     ],
-    "hint": "昵称含这些词按机器人处理，不接话；可加入其它 AI 的名字"
+    "hint": "昵称里包含这些词的账号按机器人处理，不接话；可加入其它 AI 的名字"
+  },
+  "group_overrides": {
+    "description": "按群覆盖配置（JSON）",
+    "type": "text",
+    "editor_mode": "application/json",
+    "editor_language": "json",
+    "default": "{}",
+    "hint": "示例：{\"751997685\": {\"judge_threshold\": 70, \"recent_reply_bonus\": 20}}；键是群号，可覆盖 judge_threshold / recent_reply_bonus / context_size / quiet_hours / enable"
   }
 }

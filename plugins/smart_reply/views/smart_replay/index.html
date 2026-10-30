@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>判断回放</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin:0; padding:20px; font:14px/1.5 -apple-system,"Segoe UI",system-ui,sans-serif; background:#0f1115; color:#e6e6e6; }
+  h1 { font-size:18px; margin:0 0 4px; }
+  .sub { color:#8b93a1; font-size:12px; margin-bottom:16px; }
+  .cards { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+  .card { background:#171a21; border:1px solid #232833; border-radius:10px; padding:10px 14px; min-width:110px; }
+  .card .k { color:#8b93a1; font-size:11px; }
+  .card .v { font-size:18px; font-weight:600; margin-top:2px; }
+  .bars { display:flex; gap:8px; align-items:flex-end; height:90px; margin:8px 0 22px; }
+  .bar { flex:1; background:#171a21; border-radius:6px 6px 0 0; position:relative; }
+  .bar > i { position:absolute; bottom:0; left:0; right:0; background:#3b6ef6; border-radius:6px 6px 0 0; }
+  .bar > span { position:absolute; bottom:-18px; left:0; right:0; text-align:center; font-size:11px; color:#8b93a1; }
+  .toolbar { display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; align-items:center; }
+  button { background:#222a38; color:#dfe6f3; border:1px solid #2d3648; border-radius:7px; padding:6px 10px; cursor:pointer; font-size:12px; }
+  button:hover { background:#2b3547; }
+  button.ok { border-color:#2f6b46; } button.miss { border-color:#7a5a1f; } button.spam { border-color:#7a2f2f; }
+  table { width:100%; border-collapse:collapse; font-size:12.5px; }
+  th, td { padding:7px 8px; border-bottom:1px solid #1e232d; text-align:left; vertical-align:top; }
+  th { color:#8b93a1; font-weight:500; }
+  tr:hover td { background:#141821; }
+  .score { font-weight:700; }
+  .s-hit { color:#4ade80; } .s-mid { color:#facc15; } .s-low { color:#94a3b8; }
+  .tag { font-size:11px; padding:1px 6px; border-radius:999px; background:#232833; color:#9aa4b2; }
+  .tag.miss { background:#3a2c12; color:#f3c969; } .tag.spam { background:#3a1717; color:#f19a9a; } .tag.ok { background:#14301f; color:#7fe0a4; }
+  .empty { color:#8b93a1; padding:20px 0; }
+  textarea { width:100%; height:120px; background:#12151c; color:#dfe6f3; border:1px solid #232833; border-radius:8px; padding:8px; font-family:ui-monospace,Consolas,monospace; font-size:12px; }
+</style>
+</head>
+<body>
+  <h1>判断回放</h1>
+  <div class="sub">标注误判 → 导出 few-shot 样例，直接贴回判断提示词</div>
+
+  <div class="cards">
+    <div class="card"><div class="k">分数线</div><div class="v" id="threshold">-</div></div>
+    <div class="card"><div class="k">刚回复加成</div><div class="v" id="bonus">-</div></div>
+    <div class="card"><div class="k">样本数</div><div class="v" id="total">-</div></div>
+    <div class="card"><div class="k">已标注</div><div class="v" id="labeled">-</div></div>
+  </div>
+
+  <div class="bars" id="bars"></div>
+
+  <div class="toolbar">
+    <button id="refresh">刷新</button>
+    <button id="filter-all">全部</button>
+    <button id="filter-bad">只看误判</button>
+    <button id="export">导出 few-shot</button>
+  </div>
+
+  <table>
+    <thead><tr><th style="width:64px">时间</th><th style="width:78px">群</th><th style="width:110px">发送者</th><th>内容</th><th style="width:52px">分数</th><th style="width:180px">标注</th></tr></thead>
+    <tbody id="rows"><tr><td colspan="6" class="empty">加载中…</td></tr></tbody>
+  </table>
+
+  <div id="export-wrap" style="display:none;margin-top:16px">
+    <div class="sub">复制下面这段，粘到「判断提示词模板」的示例区</div>
+    <textarea id="export-text" readonly></textarea>
+  </div>
+
+<script>
+(function () {
+  var bridge = window.AstrBotPluginView || window.AstrBotPluginPage;
+  var state = { items: [], filter: "all" };
+  var $ = function (id) { return document.getElementById(id); };
+
+  function fmtTime(ts) {
+    var d = new Date((ts || 0) * 1000);
+    var h = String(d.getHours()).padStart(2, "0");
+    var m = String(d.getMinutes()).padStart(2, "0");
+    return h + ":" + m;
+  }
+  function scoreClass(s) { return s >= 60 ? "s-hit" : s >= 40 ? "s-mid" : "s-low"; }
+  function escapeHtml(s) {
+    return String(s || "").replace(/[&<>"]/g, function (c) {
+      return {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c];
+    });
+  }
+  function labelText(v) { return v === "ok" ? "判断正确" : v === "miss" ? "该回没回" : "不该回回了"; }
+
+  function render() {
+    var items = state.items.filter(function (x) {
+      return state.filter === "all" || x.label === "miss" || x.label === "spam";
+    });
+    if (!items.length) {
+      $("rows").innerHTML = '<tr><td colspan="6" class="empty">暂无数据</td></tr>';
+      return;
+    }
+    $("rows").innerHTML = items.map(function (x) {
+      var label = x.label ? '<span class="tag ' + x.label + '">' + labelText(x.label) + '</span> ' : "";
+      return "<tr>" +
+        "<td>" + fmtTime(x.ts) + "</td>" +
+        "<td>" + escapeHtml(x.group) + "</td>" +
+        "<td>" + escapeHtml(x.sender) + "</td>" +
+        "<td>" + escapeHtml(x.text) + "</td>" +
+        '<td class="score ' + scoreClass(Number(x.score || 0)) + '">' + (x.score || 0) + "</td>" +
+        "<td>" + label +
+          '<button class="ok" data-key="' + x.key + '" data-label="ok">对</button> ' +
+          '<button class="miss" data-key="' + x.key + '" data-label="miss">该回没回</button> ' +
+          '<button class="spam" data-key="' + x.key + '" data-label="spam">不该回回了</button>' +
+        "</td></tr>";
+    }).join("");
+
+    Array.prototype.forEach.call(document.querySelectorAll("button[data-key]"), function (btn) {
+      btn.addEventListener("click", async function () {
+        var key = btn.getAttribute("data-key");
+        var label = btn.getAttribute("data-label");
+        var item = state.items.find(function (i) { return i.key === key; });
+        if (!item) return;
+        await bridge.apiPost("label", {
+          key: key, label: label, score: Number(item.score || 0),
+          text: item.text || "", group: item.group || ""
+        });
+        item.label = label;
+        render();
+        $("labeled").textContent = state.items.filter(function (x) { return x.label; }).length;
+      });
+    });
+  }
+
+  async function load() {
+    var data = await bridge.apiGet("replay", { limit: 300 });
+    var body = data.data || data;
+    state.items = body.items || [];
+    $("threshold").textContent = body.threshold != null ? body.threshold : "-";
+    $("bonus").textContent = body.bonus != null ? body.bonus : "-";
+    $("total").textContent = body.total != null ? body.total : 0;
+    $("labeled").textContent = state.items.filter(function (x) { return x.label; }).length;
+
+    var buckets = body.buckets || {};
+    var keys = Object.keys(buckets);
+    var max = Math.max.apply(null, [1].concat(keys.map(function (k) { return buckets[k]; })));
+    $("bars").innerHTML = keys.map(function (k) {
+      var h = Math.round((buckets[k] / max) * 70) + 6;
+      return '<div class="bar"><i style="height:' + h + 'px"></i><span>' + k + " · " + buckets[k] + "</span></div>";
+    }).join("");
+    render();
+  }
+
+  $("refresh").addEventListener("click", load);
+  $("filter-all").addEventListener("click", function () { state.filter = "all"; render(); });
+  $("filter-bad").addEventListener("click", function () { state.filter = "bad"; render(); });
+  $("export").addEventListener("click", function () {
+    var bad = state.items.filter(function (x) { return x.label === "miss" || x.label === "spam"; });
+    if (!bad.length) { alert("先标注几条误判"); return; }
+    $("export-text").value = bad.map(function (x) {
+      return "最近：（群友互聊） / 最新：" + x.sender + "：" + x.text + " → " + (x.label === "miss" ? 95 : 5);
+    }).join("\n");
+    $("export-wrap").style.display = "block";
+    $("export-text").select();
+  });
+
+  bridge.ready().then(load);
+})();
+</script>
+</body>
+</html>

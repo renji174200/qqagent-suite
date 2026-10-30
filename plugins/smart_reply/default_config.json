@@ -35,5 +35,6 @@
         "bot",
         "GPT",
         "Claude"
-    ]
+    ],
+    "group_overrides": {}
 }

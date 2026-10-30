@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-打分制接话判断：让机器人自己决定要不要开口
+让大肥鱼自己决定要不要接话（替代按概率主动回复）
 
 规则优先级：
 1. 被 @ / 唤醒          -> 照常回复（本插件不介入）
@@ -9,22 +9,23 @@
 4. 其他群消息           -> 交给便宜的判断模型决定 回 / 不回
 
 配置：data/config/smart_reply_config.json
+回滚：见 /opt/astrbot-stack/backups/smart_reply_rollback/
 """
 
 import asyncio
 import json
-import pathlib
 import re
 import time
 from datetime import datetime
 from pathlib import Path
 
 from astrbot.api import logger
+from astrbot.api.web import error_response, json_response, request
 from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.star import Context, Star, register
 from astrbot.core.message.message_event_result import MessageEventResult
 
-_DATA_DIR = pathlib.Path(__file__).resolve().parents[2]  # .../AstrBot/data
+_DATA_DIR = Path(__file__).resolve().parents[2]  # data dir
 CFG_PATH = _DATA_DIR / "config" / "smart_reply_config.json"
 DEFAULTS = {
     "enable": True,
@@ -32,7 +33,7 @@ DEFAULTS = {
     "cooldown_sec": 120,
     "context_size": 10,
     "min_text_len": 3,
-    "name_keywords": [],
+    "name_keywords": ["大肥鱼"],
     "force_keywords": [
         "说话来", "说句话", "回我", "回句话", "别装死", "装什么死",
         "你说话", "理我", "出来", "狂什么", "你倒是说", "吭声",
@@ -47,12 +48,11 @@ DEFAULTS = {
     "decision_log": True,
     "require_signal": True,
     "signal_keywords": ["你", "鱼", "肥", "臭", "?", "？", "吗", "呢"],
-    "ignore_senders": [],
+    "ignore_senders": ["才不是大肥鱼"],
     "ignore_sender_ids": [],
     "ignore_bot_names": ["机器人", "bot", "GPT", "Claude"],
+    "group_overrides": {},
 }
-
-SELF_LABEL = "机器人（你）"
 
 PUNCT_ONLY = re.compile(r"^[\s\W_]+$", re.UNICODE)
 
@@ -90,6 +90,15 @@ class SmartReply(Star):
         self._ctx: dict[str, list[dict]] = {}
         self._last_reply: dict[str, float] = {}
         self._judge_log: dict[str, list[float]] = {}
+        try:
+            context.register_web_api(
+                "/smart_reply/replay", self.page_replay, ["GET"], "判断回放数据"
+            )
+            context.register_web_api(
+                "/smart_reply/label", self.page_label, ["POST"], "标注判断结果"
+            )
+        except Exception as e:
+            logger.warning(f"[smart_reply] 注册 Web API 失败: {e}")
         logger.info(
             f"[smart_reply] 已加载：判断模型={self.cfg['judge_provider_id']} "
             f"冷却={self.cfg['cooldown_sec']}s 关键词={self.cfg['name_keywords']}"
@@ -107,9 +116,23 @@ class SmartReply(Star):
         except Exception:
             pass
 
-    def _in_quiet_hours(self) -> bool:
+    def _group_override(self, umo: str) -> dict:
+        """按群读取覆盖配置；支持 dict 或 JSON 字符串。"""
+        raw = self.cfg.get("group_overrides") or {}
+        if isinstance(raw, str):
+            try:
+                raw = json.loads(raw or "{}")
+            except Exception:
+                raw = {}
+        if not isinstance(raw, dict):
+            return {}
+        gid = str(umo).rsplit(":", 1)[-1]
+        ov = raw.get(gid) or raw.get(str(gid)) or {}
+        return ov if isinstance(ov, dict) else {}
+
+    def _in_quiet_hours(self, ov: dict | None = None) -> bool:
         try:
-            spec = str(self.cfg.get("quiet_hours") or "").strip()
+            spec = str((ov or {}).get("quiet_hours", self.cfg.get("quiet_hours")) or "").strip()
             if not spec or "-" not in spec:
                 return False
             a, b = spec.split("-", 1)
@@ -135,7 +158,7 @@ class SmartReply(Star):
         if len(buf) > int(self.cfg.get("context_size", 6)):
             del buf[: len(buf) - int(self.cfg.get("context_size", 6))]
 
-    async def _ask_judge(self, umo: str, sender_name: str, text: str):
+    async def _ask_judge(self, umo: str, sender_name: str, text: str, ctx_n: int | None = None):
         """返回 (分数 0-100, 原始回答)。失败返回 (0, "")"""
         try:
             provider = self.context.get_provider_by_id(self.cfg["judge_provider_id"])
@@ -148,7 +171,7 @@ class SmartReply(Star):
             async with self._judge_lock:
                 for attempt in range(3):
                     try:
-                        return await self._call_judge(provider, umo, sender_name, text)
+                        return await self._call_judge(provider, umo, sender_name, text, ctx_n)
                     except Exception as e:
                         msg = str(e)
                         if "429" in msg or "1302" in msg or "1305" in msg:
@@ -161,7 +184,7 @@ class SmartReply(Star):
                     if fb is not None:
                         logger.warning(f"[smart_reply] 主判断模型限流，改用备用 {fb_id}")
                         try:
-                            return await self._call_judge(fb, umo, sender_name, text)
+                            return await self._call_judge(fb, umo, sender_name, text, ctx_n)
                         except Exception as e:
                             logger.warning(f"[smart_reply] 备用判断也失败: {e}")
             return 0, ""
@@ -169,14 +192,14 @@ class SmartReply(Star):
             logger.warning(f"[smart_reply] 判断失败: {e}")
             return 0, ""
 
-    async def _call_judge(self, provider, umo: str, sender_name: str, text: str):
+    async def _call_judge(self, provider, umo: str, sender_name: str, text: str, ctx_n: int | None = None):
         try:
             lines = []
-            ctx_n = int(self.cfg.get("context_size", 10))
+            ctx_n = int(ctx_n or self.cfg.get("context_size", 10))
             for i, m in enumerate(self._ctx.get(umo, [])[-ctx_n:], 1):
                 lines.append(f"{i}. {m['name']}：{m['text']}")
             convo = "\n".join(lines)
-            aliases = "、".join(self.cfg.get("name_keywords") or ["机器人"])
+            aliases = "、".join(self.cfg.get("name_keywords") or ["大肥鱼"])
             template = str(self.cfg.get("judge_prompt") or "").strip() or DEFAULT_JUDGE_PROMPT
             system_prompt = template.replace("{aliases}", aliases)
             user_prompt = (
@@ -207,7 +230,7 @@ class SmartReply(Star):
         if not self.cfg.get("decision_log", True):
             return
         try:
-            import json as _json
+            import os, json as _json, pathlib
             d = _DATA_DIR / "plugin_data" / "smart_reply"
             d.mkdir(parents=True, exist_ok=True)
             rec = {"ts": time.time(), "umo": umo, "sender": sender,
@@ -260,7 +283,7 @@ class SmartReply(Star):
             ).strip()
             if not text:
                 return
-            self._track(event.unified_msg_origin, SELF_LABEL, text[:200])
+            self._track(event.unified_msg_origin, "大肥鱼（你）", text[:200])
         except Exception:
             pass
 
@@ -299,6 +322,9 @@ class SmartReply(Star):
             text = (event.message_str or "").strip()
             name = event.get_sender_name() or str(event.get_sender_id() or "")
             umo = event.unified_msg_origin
+            ov = self._group_override(umo)
+            if ov.get("enable") is False:
+                return
 
             # 别的机器人 / 指定忽略的人，不参与判断
             ign = [str(x) for x in (self.cfg.get("ignore_senders") or []) if str(x).strip()]
@@ -359,9 +385,8 @@ class SmartReply(Star):
                 self._last_reply[umo] = time.time()
                 return
 
-            # 硬规则：引用了她的消息（引用内容里出现她的名字）
-            _qm = re.search(r"引用消息[（(](.{0,60}?)[)）]", text)
-            if _qm and any(k in _qm.group(1) for k in keywords):
+            # 硬规则：引用了她的消息（引用消息里出现她的名字/群名片）
+            if "引用消息" in text and re.search(r"引用消息\([^)]{0,40}(大肥鱼|肥鱼|臭鱼|小肥鱼)", text):
                 logger.info(f"[smart_reply] 引用她的话，直接接话：{text[:40]}")
                 self._force_reply(event)
                 self._last_reply[umo] = time.time()
@@ -378,7 +403,7 @@ class SmartReply(Star):
             # 她刚说过话，且这条是紧接着她说的第一句 —— 才算承接（默认关闭）
             try:
                 hist = self._ctx.get(umo, [])[:-1] if self.cfg.get("enable_continuation", False) else []
-                if hist and str(hist[-1].get("name", "")).startswith("机器人"):
+                if hist and str(hist[-1].get("name", "")).startswith("大肥鱼"):
                     if time.time() - float(hist[-1].get("ts", 0)) < 90 and len(text) <= 12:
                         logger.info(f"[smart_reply] 承接她上一句，直接接话：{text[:30]}")
                         self._force_reply(event)
@@ -387,7 +412,7 @@ class SmartReply(Star):
             except Exception:
                 pass
 
-            if self._in_quiet_hours():
+            if self._in_quiet_hours(ov):
                 return
 
             # 粗筛：没有指向性词的消息基本是群友闲聊，不值得花判断成本
@@ -405,14 +430,100 @@ class SmartReply(Star):
             if not self._judge_quota(umo):
                 return
 
-            score, raw = await self._ask_judge(umo, name, text)
-            threshold = float(self.cfg.get("judge_threshold", 60))
+            ctx_n = int(ov.get("context_size") or 0) or None
+            score, raw = await self._ask_judge(umo, name, text, ctx_n=ctx_n)
+            threshold = float(ov.get("judge_threshold", self.cfg.get("judge_threshold", 60)))
             window = float(self.cfg.get("recent_reply_window_sec", 300))
             if time.time() - float(self._last_reply.get(umo, 0)) < window:
-                threshold += float(self.cfg.get("recent_reply_bonus", 15))
+                threshold += float(ov.get("recent_reply_bonus", self.cfg.get("recent_reply_bonus", 15)))
             logger.info(f"[smart_reply] 判断 {name}「{text[:30]}」-> {score}分 (阈值{threshold:.0f}) => {'回' if score >= threshold else '不回'}")
             if score >= threshold:
                 self._force_reply(event)
                 self._last_reply[umo] = time.time()
         except Exception as e:
             logger.warning(f"[smart_reply] 处理失败: {e}")
+
+    # ---------------- 判断回放面板 ----------------
+    def _replay_dir(self):
+        return _DATA_DIR / "plugin_data" / "smart_reply"
+
+    def _read_jsonl(self, path, limit: int = 500):
+        rows = []
+        try:
+            with open(path, encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        rows.append(json.loads(line))
+                    except Exception:
+                        continue
+        except Exception:
+            return []
+        return rows[-limit:]
+
+    def _label_map(self):
+        rows = self._read_jsonl(self._replay_dir() / "labels.jsonl", 5000)
+        return {str(r.get("key")): r for r in rows if r.get("key")}
+
+    async def page_replay(self):
+        try:
+            limit = request.query.get("limit", 200, type=int)
+            d = self._replay_dir()
+            decisions = self._read_jsonl(d / "decisions.jsonl", max(1, min(limit, 1000)))
+            labels = self._label_map()
+            for r in decisions:
+                r["key"] = f"{float(r.get('ts', 0)):.3f}"
+                r["label"] = labels.get(r["key"], {}).get("label", "")
+                r["group"] = str(r.get("umo", "")).rsplit(":", 1)[-1]
+            buckets = {"0-19": 0, "20-39": 0, "40-59": 0, "60-79": 0, "80-100": 0}
+            for r in decisions:
+                sc = int(r.get("score") or 0)
+                if sc < 20:
+                    buckets["0-19"] += 1
+                elif sc < 40:
+                    buckets["20-39"] += 1
+                elif sc < 60:
+                    buckets["40-59"] += 1
+                elif sc < 80:
+                    buckets["60-79"] += 1
+                else:
+                    buckets["80-100"] += 1
+            return json_response(
+                {
+                    "threshold": self.cfg.get("judge_threshold", 60),
+                    "bonus": self.cfg.get("recent_reply_bonus", 15),
+                    "group_overrides": self.cfg.get("group_overrides", {}),
+                    "buckets": buckets,
+                    "total": len(decisions),
+                    "items": decisions[::-1],
+                }
+            )
+        except Exception as e:
+            return error_response(f"读取判断日志失败: {e}", status_code=500)
+
+    async def page_label(self):
+        try:
+            payload = await request.json(default={})
+            key = str(payload.get("key") or "").strip()
+            label = str(payload.get("label") or "").strip()
+            if label not in ("ok", "miss", "spam"):
+                return error_response("label 必须是 ok / miss / spam")
+            if not key:
+                return error_response("缺少 key")
+            rec = {
+                "key": key,
+                "label": label,
+                "ts": time.time(),
+                "text": str(payload.get("text") or "")[:300],
+                "score": int(payload.get("score") or 0),
+                "group": str(payload.get("group") or ""),
+            }
+            d = self._replay_dir()
+            d.mkdir(parents=True, exist_ok=True)
+            with open(d / "labels.jsonl", "a", encoding="utf-8") as f:
+                f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+            return json_response({"saved": True})
+        except Exception as e:
+            return error_response(f"保存标注失败: {e}", status_code=500)

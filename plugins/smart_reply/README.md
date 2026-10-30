@@ -37,3 +37,26 @@ data/plugin_data/smart_reply/decisions.jsonl
 ```
 
 每行含 `score`、`text`、`sender`，可直接统计分数分布。
+
+## 判断回放面板
+
+插件详情页 →「判断回放」：
+
+- 查看最近 300 条判断（群、发送者、内容、分数）
+- 分数分布柱状图，一眼看出阈值是否合适
+- 逐条标注：`对` / `该回没回` / `不该回回了`
+- 点「导出 few-shot」生成提示词样例，粘贴回 `judge_prompt` 即可提升准确率
+
+## 分群配置
+
+`group_overrides` 支持按群覆盖参数：
+
+```json
+{
+  "751997685": {"judge_threshold": 70, "recent_reply_bonus": 20},
+  "111627212": {"judge_threshold": 50, "quiet_hours": ""},
+  "722324569": {"enable": false}
+}
+```
+
+可覆盖：`judge_threshold`、`recent_reply_bonus`、`context_size`、`quiet_hours`、`enable`。
